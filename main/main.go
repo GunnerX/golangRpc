@@ -38,12 +38,15 @@ func main() {
 	// send req & receive rsp
 	for i := 0; i < 5; i++ {
 		log.Printf("in for i = %d", i)
+		// 请求的header
 		h := &codec.Header{
 			ServiceMethod: "Foo.Sum",
 			Seq:           uint64(i),
 		}
+		// 写入请求的header h, 和body
 		cc.Write(h, fmt.Sprintf("golangRpc req %d", h.Seq))
 		cc.ReadHeader(h)
+		// 读取响应的body
 		var reply string
 		cc.ReadBody(&reply)
 		log.Println("reply: ", reply)
