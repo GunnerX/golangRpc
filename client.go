@@ -98,7 +98,7 @@ func (client *Client) terminateCalls(err error) {
 	}
 }
 
-// receive 客户端的接受功能
+// receive 客户端的接收功能
 func (client *Client) receive() {
 	var err error
 	for err == nil {
@@ -219,4 +219,28 @@ func (client *Client) send(call *Call) {
 			call.done()
 		}
 	}
+}
+
+// Go 和 Call 是客户端暴露给用户的两个 RPC 服务调用接口
+// Go 是一个异步接口，返回 call 实例
+func (client *Client) Go(serviceMethod string, args, reply interface{}, done chan *Call) *Call {
+	if done == nil {
+		done = make(chan *Call, 10)
+	} else if cap(done) == 0 {
+		log.Panic("rpc client: done channel is unbuffered")
+	}
+	call := &Call{
+		ServiceMethod: serviceMethod,
+		Args:          args,
+		Reply:         reply,
+		Done:          done,
+	}
+	client.send(call)
+	return call
+}
+
+// Call 是对 Go 的封装，阻塞 call.Done，等待响应返回，是一个同步接口
+func (client *Client) Call(serviceMethod string, args, reply interface{}) error {
+	call := <-client.Go(serviceMethod, args, reply, make(chan *Call, 1)).Done
+	return call.Error
 }
